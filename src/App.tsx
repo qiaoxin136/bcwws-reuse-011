@@ -823,6 +823,7 @@ function App() {
                   <Layer
                     id="station-points"
                     type="circle"
+                    source="station"
                     paint={{
                       'circle-radius': 1,
                       'circle-color': '#e85d04',
@@ -831,6 +832,7 @@ function App() {
                   <Layer
                     id="station-labels"
                     type="symbol"
+                    source="station"
                     layout={{
                       'text-field': ['get', 'Text'],
                       'text-size': 10,
