@@ -54,7 +54,6 @@ import {
   Theme,
   Divider,
   Tabs,
-  SelectField,
   ScrollView,
   Radio,
   RadioGroupField,
@@ -139,10 +138,6 @@ const theme: Theme = {
 //   };
 // };
 
-type SelectOption = {
-  value: string;
-  label: string;
-};
 
 
 
@@ -310,7 +305,6 @@ function App() {
 
 
 
-  const options: SelectOption[] = TRACK_TYPES.map(t => ({ value: t, label: t }));
 
   //console.log(AIR_PORTS);
 
