@@ -1,4 +1,5 @@
 import type { ChangeEvent, SyntheticEvent } from "react";
+import { TRACK_TYPES, TRACK_DATA } from './trackData';
 import { useEffect, useState, useCallback, useMemo } from "react";
 import type { Schema } from "../amplify/data/resource";
 import { checkLoginAndGetName } from "./utils/AuthUtils";
@@ -85,6 +86,12 @@ const dateSelectionSet = [
 ] as const;
 type DateItem = SelectionSet<Schema['Date']['type'], typeof dateSelectionSet>;
 
+const trackSelectionSet = [
+  'id', 'track', 'type', 'geometry', 'quantity', 'unitprice', 'value',
+  'createdAt', 'updatedAt',
+] as const;
+type TrackItem = SelectionSet<Schema['Track']['type'], typeof trackSelectionSet>;
+
 
 const theme: Theme = {
   name: "table-theme",
@@ -145,6 +152,57 @@ export type CustomEvent = {
 }
 // Hong's addition end
 
+function TypeSelect({ value, onChange, style }: {
+  value: string;
+  onChange: (val: string) => void;
+  style?: React.CSSProperties;
+}) {
+  const [open, setOpen] = useState(false);
+  const geoColor = (type: string) => {
+    const geo = TRACK_DATA.find(r => r.type === type)?.geometry;
+    return geo === 'line' ? 'darkgreen' : geo === 'point' ? 'darkgrey' : 'darkblue';
+  };
+  return (
+    <div style={{ position: 'relative', ...style }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          fontSize: '11px', padding: '2px 4px', border: '1px solid #ccc',
+          borderRadius: '3px', cursor: 'pointer', background: '#fff',
+          color: geoColor(value), userSelect: 'none',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}
+      >
+        <span>{value}</span>
+        <span style={{ marginLeft: 4, color: '#333' }}>▾</span>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', zIndex: 9999, background: '#fff',
+          border: '1px solid #ccc', borderRadius: '3px',
+          maxHeight: '220px', overflowY: 'auto', width: '100%', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        }}>
+          {TRACK_TYPES.map(t => (
+            <div
+              key={t}
+              onClick={() => { onChange(t); setOpen(false); }}
+              style={{
+                fontSize: '11px', padding: '4px 6px', cursor: 'pointer',
+                color: geoColor(t),
+                background: t === value ? '#e8f0fe' : '#fff',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f0f0f0')}
+              onMouseLeave={e => (e.currentTarget.style.background = t === value ? '#e8f0fe' : '#fff')}
+            >
+              {t}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 //const MAP_STYLE = "mapbox://styles/mapbox/streets-v12";
 // "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 
@@ -192,7 +250,7 @@ function App() {
   const [time, setTime] = useState("");
   //const [report, setReport] = useState("");
   const [track, setTrack] = useState<number>(0);
-  const [type, setType] = useState<string>("reuse");
+  const [type, setType] = useState<string>(TRACK_TYPES[0]);
   const [diameter, setDiameter] = useState<number>(0);
   const [length, setLength] = useState<number>(0);
   const [userName, setUserName] = useState<string>();
@@ -217,7 +275,7 @@ function App() {
   const [editTrack, setEditTrack] = useState<string>('');
   const [editDescription, setEditDescription] = useState<string>('');
   const [editDiameter, setEditDiameter] = useState<string>('');
-  const [editType, setEditType] = useState<string>('reuse');
+  const [editType, setEditType] = useState<string>(TRACK_TYPES[0]);
   const [editJoint, setEditJoint] = useState<string>("joint");
   const [editDate, setEditDate] = useState<string>('');
 
@@ -239,15 +297,20 @@ function App() {
     remark: "", comment: "", equipment: "",
   });
 
+  const [trackInfoList, setTrackInfoList] = useState<TrackItem[]>([]);
+  const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
+  const [editTrackFields, setEditTrackFields] = useState({
+    track: "", type: "", geometry: "" as "line" | "point" | "polygon" | "",
+    quantity: "" as number | "", unitprice: "" as number | "", value: "" as number | "",
+  });
+  const [newTrackFields, setNewTrackFields] = useState({
+    track: "", type: "", geometry: "" as "line" | "point" | "polygon" | "",
+    quantity: "" as number | "", unitprice: "" as number | "", value: "" as number | "",
+  });
 
 
-  const options: SelectOption[] = [
-    { value: 'reuse', label: 'Reuse' },
-    { value: 'water', label: 'Water' },
-    { value: 'wastewater', label: 'Wastewater' },
-    { value: 'stormwater', label: 'Stormwater' },
-    { value: 'pavement', label: 'Pavement' }
-  ];
+
+  const options: SelectOption[] = TRACK_TYPES.map(t => ({ value: t, label: t }));
 
   //console.log(AIR_PORTS);
 
@@ -268,11 +331,6 @@ function App() {
     setTrack(parseInt(e.target.value));
   };
 
-  const handleSelectChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
-    //console.log(value);
-    setType(value);
-  }
 
   const handleDiameter = (e: ChangeEvent<HTMLInputElement>) => {
     setDiameter(parseInt(e.target.value));
@@ -316,6 +374,16 @@ function App() {
     return () => sub.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const sub = client.models.Track.observeQuery({
+      selectionSet: [...trackSelectionSet],
+    }).subscribe({
+      next: (data) => setTrackInfoList([...data.items]),
+      error: (err) => console.error('Track observeQuery error:', err),
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
   // Build jointMap directly from Amplify location state (no external fetch needed).
   useEffect(() => {
     const map: Record<string, string | null> = {};
@@ -336,10 +404,7 @@ function App() {
     }
 
     handleUserName();
-    //console.log(typeof userName);
-    //console.log("Username:", userName);
-    const name = userName
-    //console.log(name);
+    const name = userName;
     client.models.Location.create({
       date: date,
       time: time,
@@ -349,13 +414,23 @@ function App() {
       length: calResult !== null ? calResult : length,
       username: name,
       description: description,
-
-
       lat: lat,
       lng: lng,
       joint: joint,
-
     });
+
+    const trackStr = String(track);
+    const alreadyExists = trackInfoList.some(t => t.track === trackStr);
+    if (!alreadyExists) {
+      const csvRow = TRACK_DATA.find(r => r.type === type);
+      client.models.Track.create({
+        track: trackStr,
+        type: type,
+        geometry: csvRow?.geometry ?? undefined,
+        unitprice: csvRow?.unitprice ?? undefined,
+      });
+    }
+
     setDate("");
     setTime("");
     setTrack(track);
@@ -599,6 +674,52 @@ function App() {
     setEditingDateId(null);
   }
 
+  function polygonAreaSqYd(points: { lat: number; lng: number }[]): number {
+    if (points.length < 3) return 0;
+    const avgLatRad = points.reduce((s, p) => s + p.lat, 0) / points.length * Math.PI / 180;
+    const mPerDegLat = 111139;
+    const mPerDegLng = 111139 * Math.cos(avgLatRad);
+    let area = 0;
+    const n = points.length;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const xi = points[i].lng * mPerDegLng;
+      const yi = points[i].lat * mPerDegLat;
+      const xj = points[j].lng * mPerDegLng;
+      const yj = points[j].lat * mPerDegLat;
+      area += xi * yj - xj * yi;
+    }
+    return Math.abs(area) / 2 * 1.19599; // sq metres → sq yards
+  }
+
+  async function handleFillTrack() {
+    for (const trackItem of trackInfoList) {
+      const trackNum = parseInt(trackItem.track ?? '');
+      if (isNaN(trackNum)) continue;
+
+      const locs = location.filter(loc => loc.track === trackNum);
+      let quantity = 0;
+
+      if (trackItem.geometry === 'point') {
+        quantity = locs.length;
+      } else if (trackItem.geometry === 'line') {
+        quantity = locs.reduce((sum, loc) => sum + (loc.length ?? 0), 0);
+      } else if (trackItem.geometry === 'polygon') {
+        const pts = locs
+          .filter(loc => loc.lat != null && loc.lng != null)
+          .map(loc => ({ lat: loc.lat!, lng: loc.lng! }));
+        quantity = polygonAreaSqYd(pts);
+      }
+
+      const value = trackItem.unitprice != null ? trackItem.unitprice * quantity : undefined;
+      await client.models.Track.update({
+        id: trackItem.id,
+        quantity,
+        ...(value !== undefined ? { value } : {}),
+      });
+    }
+  }
+
   function handleCal() {
     const sameTrack = location.filter(loc => loc.track === track);
     if (sameTrack.length === 0) {
@@ -624,6 +745,33 @@ function App() {
     }
 
     setCalResult(haversineDistanceFt(lat, lng, latest.lat, latest.lng));
+  }
+
+  function createTrackInfo() {
+    const f = newTrackFields;
+    client.models.Track.create({
+      track: f.track || undefined,
+      type: f.type || undefined,
+      geometry: (f.geometry || undefined) as "line" | "point" | "polygon" | undefined,
+      quantity: f.quantity !== "" ? Number(f.quantity) : undefined,
+      unitprice: f.unitprice !== "" ? Number(f.unitprice) : undefined,
+      value: f.value !== "" ? Number(f.value) : undefined,
+    });
+    setNewTrackFields({ track: "", type: "", geometry: "", quantity: "", unitprice: "", value: "" });
+  }
+
+  function saveTrackInfo(id: string) {
+    const f = editTrackFields;
+    client.models.Track.update({
+      id,
+      track: f.track || undefined,
+      type: f.type || undefined,
+      geometry: (f.geometry || undefined) as "line" | "point" | "polygon" | undefined,
+      quantity: f.quantity !== "" ? Number(f.quantity) : undefined,
+      unitprice: f.unitprice !== "" ? Number(f.unitprice) : undefined,
+      value: f.value !== "" ? Number(f.value) : undefined,
+    });
+    setEditingTrackId(null);
   }
 
   const onClick = useCallback((e: MapMouseEvent) => {
@@ -691,6 +839,9 @@ function App() {
         <Button onClick={handleCal} backgroundColor={"lightyellow"} color={"darkblue"}>
           QC
         </Button>
+        <Button onClick={handleFillTrack} backgroundColor={"lightgreen"} color={"darkgreen"}>
+          Fill Track
+        </Button>
         {calResult !== null && (
           <span style={{ alignSelf: "center", fontWeight: "bold" }}>
             Distance: {calResult.toFixed(1)} ft
@@ -719,21 +870,13 @@ function App() {
           value={track}
           placeholder="track"
           onChange={handleTrack}
-        //width="150%"
+          style={{ width: '70px' }}
         />
-        <SelectField
-          label="Select an option"
-          labelHidden={true}
+        <TypeSelect
           value={type}
-          onChange={handleSelectChange}
-        //width="100%"
-        >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </SelectField>
+          onChange={setType}
+          style={{ width: '220px' }}
+        />
 
 
         <input
@@ -741,7 +884,7 @@ function App() {
           value={diameter}
           placeholder="diameter (in)"
           onChange={handleDiameter}
-        //width="150%"
+          style={{ width: '100px' }}
         />
   
         <Input
@@ -758,8 +901,10 @@ function App() {
           <option value="joint">Joint</option>
           <option value="90-bend">90-Bend</option>
           <option value="45-bend">45-Bend</option>
-          <option value="11-bend">11-Bend</option>
-          <option value="plug-valve">Plug Valve</option>
+          <option value="22.5-bend">22.5-Bend</option>
+          <option value="11.25-bend">11.25-Bend</option>
+          <option value="24-plug-valve">24-Plug Valve</option>
+          <option value="30-plug-valve">30-Plug Valve</option>
         </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}>
           <input
@@ -926,18 +1071,11 @@ function App() {
                             <tr>
                               <td>Type</td>
                               <td>
-                                <select
-                                  aria-label="Type"
+                                <TypeSelect
                                   value={editType}
-                                  onChange={e => setEditType(e.target.value)}
-                                  style={{ fontSize: '11px', padding: '2px 4px', width: '100%' }}
-                                >
-                                  <option value="reuse">reuse</option>
-                                  <option value="water">water</option>
-                                  <option value="wastewater">wastewater</option>
-                                  <option value="stormwater">stormwater</option>
-                                  <option value="pavement">pavement</option>
-                                </select>
+                                  onChange={setEditType}
+                                  style={{ width: '100%' }}
+                                />
                               </td>
                             </tr>
                             <tr>
@@ -987,8 +1125,10 @@ function App() {
                                   <option value="joint">Joint</option>
                                   <option value="90-bend">90-Bend</option>
                                   <option value="45-bend">45-Bend</option>
-                                  <option value="11-bend">11-Bend</option>
-                                  <option value="plug-valve">Plug Valve</option>
+                                  <option value="22.5-bend">22.5-Bend</option>
+                                  <option value="11.25-bend">11.25-Bend</option>
+                                  <option value="24-plug-valve">24-Plug Valve</option>
+                                  <option value="30-plug-valve">30-Plug Valve</option>
                                 </select>
                               </td>
                             </tr>
@@ -1337,6 +1477,142 @@ function App() {
                                 });
                               }} style={{ backgroundColor: 'green', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer', marginRight: 4 }}>Modify</button>
                               <button onClick={() => { if (window.confirm(`Delete record for ${item.date}?`)) client.models.Date.delete({ id: item.id }); }} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer' }}>Delete</button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </ThemeProvider>
+              </ScrollView>
+            </>)
+          },
+          {
+            label: "Track Info",
+            value: "4",
+            content: (<>
+              <ScrollView
+                as="div"
+                ariaLabel="Track Info"
+                backgroundColor="var(--amplify-colors-white)"
+                borderRadius="6px"
+                color="var(--amplify-colors-blue-60)"
+                padding="1rem"
+                height="700px"
+              >
+                <ThemeProvider theme={theme} colorMode="light">
+                  <Table caption="" highlightOnHover={false} variation="striped"
+                    style={{ width: '100%', fontFamily: 'Arial, sans-serif' }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell as="th">Track</TableCell>
+                        <TableCell as="th">Type</TableCell>
+                        <TableCell as="th">Geometry</TableCell>
+                        <TableCell as="th">Quantity</TableCell>
+                        <TableCell as="th">Unit Price</TableCell>
+                        <TableCell as="th">Value</TableCell>
+                        <TableCell as="th"></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          <input type="text" value={newTrackFields.track} placeholder="track"
+                            onChange={e => setNewTrackFields(p => ({ ...p, track: e.target.value }))} style={{ width: '100%' }} />
+                        </TableCell>
+                        <TableCell>
+                          <input type="text" value={newTrackFields.type} placeholder="type"
+                            onChange={e => setNewTrackFields(p => ({ ...p, type: e.target.value }))} style={{ width: '100%' }} />
+                        </TableCell>
+                        <TableCell>
+                          <select value={newTrackFields.geometry}
+                            onChange={e => setNewTrackFields(p => ({ ...p, geometry: e.target.value as "line" | "point" | "polygon" | "" }))}
+                            style={{ width: '100%' }}>
+                            <option value="">-- select --</option>
+                            <option value="line">line</option>
+                            <option value="point">point</option>
+                            <option value="polygon">polygon</option>
+                          </select>
+                        </TableCell>
+                        <TableCell>
+                          <input type="number" value={newTrackFields.quantity} placeholder="quantity"
+                            onChange={e => setNewTrackFields(p => ({ ...p, quantity: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: '100%' }} />
+                        </TableCell>
+                        <TableCell>
+                          <input type="number" value={newTrackFields.unitprice} placeholder="unit price"
+                            onChange={e => setNewTrackFields(p => ({ ...p, unitprice: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: '100%' }} />
+                        </TableCell>
+                        <TableCell>
+                          <input type="number" value={newTrackFields.value} placeholder="value"
+                            onChange={e => setNewTrackFields(p => ({ ...p, value: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: '100%' }} />
+                        </TableCell>
+                        <TableCell>
+                          <button onClick={createTrackInfo} style={{ backgroundColor: 'green', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer' }}>Add</button>
+                        </TableCell>
+                      </TableRow>
+                      {[...trackInfoList].sort((a, b) => (a.track ?? '').localeCompare(b.track ?? '')).map(item => {
+                        const isEditing = editingTrackId === item.id;
+                        const ef = editTrackFields;
+                        const setEf = (field: keyof typeof editTrackFields, val: string | number | "") =>
+                          setEditTrackFields(prev => ({ ...prev, [field]: val }));
+                        return isEditing ? (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <input type="text" value={ef.track}
+                                onChange={e => setEf('track', e.target.value)} style={{ width: '100%' }} />
+                            </TableCell>
+                            <TableCell>
+                              <input type="text" value={ef.type}
+                                onChange={e => setEf('type', e.target.value)} style={{ width: '100%' }} />
+                            </TableCell>
+                            <TableCell>
+                              <select value={ef.geometry}
+                                onChange={e => setEf('geometry', e.target.value)}
+                                style={{ width: '100%' }}>
+                                <option value="">-- select --</option>
+                                <option value="line">line</option>
+                                <option value="point">point</option>
+                                <option value="polygon">polygon</option>
+                              </select>
+                            </TableCell>
+                            <TableCell>
+                              <input type="number" value={ef.quantity}
+                                onChange={e => setEf('quantity', e.target.value === "" ? "" : Number(e.target.value))} style={{ width: '100%' }} />
+                            </TableCell>
+                            <TableCell>
+                              <input type="number" value={ef.unitprice}
+                                onChange={e => setEf('unitprice', e.target.value === "" ? "" : Number(e.target.value))} style={{ width: '100%' }} />
+                            </TableCell>
+                            <TableCell>
+                              <input type="number" value={ef.value}
+                                onChange={e => setEf('value', e.target.value === "" ? "" : Number(e.target.value))} style={{ width: '100%' }} />
+                            </TableCell>
+                            <TableCell>
+                              <button onClick={() => saveTrackInfo(item.id)} style={{ marginRight: 4, backgroundColor: 'green', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer' }}>Save</button>
+                              <button onClick={() => setEditingTrackId(null)} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer' }}>Cancel</button>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.track}</TableCell>
+                            <TableCell>{item.type}</TableCell>
+                            <TableCell>{item.geometry}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>{item.unitprice}</TableCell>
+                            <TableCell>{item.value}</TableCell>
+                            <TableCell>
+                              <button onClick={() => {
+                                setEditingTrackId(item.id);
+                                setEditTrackFields({
+                                  track: item.track ?? "",
+                                  type: item.type ?? "",
+                                  geometry: (item.geometry ?? "") as "line" | "point" | "polygon" | "",
+                                  quantity: item.quantity ?? "",
+                                  unitprice: item.unitprice ?? "",
+                                  value: item.value ?? "",
+                                });
+                              }} style={{ backgroundColor: 'green', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer', marginRight: 4 }}>Modify</button>
+                              <button onClick={() => { if (window.confirm(`Delete track record?`)) client.models.Track.delete({ id: item.id }); }} style={{ backgroundColor: 'red', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer' }}>Delete</button>
                             </TableCell>
                           </TableRow>
                         );
