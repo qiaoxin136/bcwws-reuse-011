@@ -714,6 +714,61 @@ function App() {
     }
   }
 
+  async function handleExportPolygon() {
+    const polygonTracks = trackInfoList.filter(t => t.geometry === 'polygon');
+
+    const features = polygonTracks.map(trackItem => {
+      const trackNum = parseInt(trackItem.track ?? '');
+      const locs = location
+        .filter(loc => loc.track === trackNum && loc.lat != null && loc.lng != null)
+        .sort((a, b) => {
+          const da = `${a.date ?? ''}T${a.time ?? ''}`;
+          const db = `${b.date ?? ''}T${b.time ?? ''}`;
+          return da.localeCompare(db);
+        });
+
+      const coords: [number, number][] = locs.map(loc => [loc.lng!, loc.lat!]);
+      if (coords.length > 0) coords.push(coords[0]); // close the ring
+
+      return {
+        type: 'Feature' as const,
+        properties: {
+          track: trackItem.track,
+          type: trackItem.type,
+          quantity: trackItem.quantity,
+          unitprice: trackItem.unitprice,
+          value: trackItem.value,
+        },
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [coords],
+        },
+      };
+    });
+
+    const geojson = { type: 'FeatureCollection' as const, features };
+    const content = JSON.stringify(geojson, null, 2);
+    const blob = new Blob([content], { type: 'application/geo+json' });
+
+    // Upload to S3 storage
+    try {
+      await uploadData({ path: 'originals/polygon.geojson', data: blob }).result;
+      console.log('polygon.geojson uploaded to S3');
+    } catch (err) {
+      console.error('S3 upload failed:', err);
+    }
+
+    // Download to local machine (saves to browser Downloads folder as polygon.geojson)
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'polygon.geojson';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function handleCal() {
     const sameTrack = location.filter(loc => loc.track === track);
     if (sameTrack.length === 0) {
@@ -835,6 +890,9 @@ function App() {
         </Button>
         <Button onClick={handleFillTrack} backgroundColor={"lightgreen"} color={"darkgreen"}>
           Fill Track
+        </Button>
+        <Button onClick={handleExportPolygon} backgroundColor={"lightyellow"} color={"darkorange"}>
+          Export Polygon
         </Button>
         {calResult !== null && (
           <span style={{ alignSelf: "center", fontWeight: "bold" }}>
