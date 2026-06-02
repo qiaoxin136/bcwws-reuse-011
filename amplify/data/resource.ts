@@ -37,6 +37,7 @@ const schema = a.schema({
       photos: a.string().array(),
       comments: a.ref('Comment').array(),
       joint: a.string(),
+      color: a.string(),
       dates: a.hasMany('Date', 'locationId'),
     })
     .authorization((allow) => [allow.publicApiKey()]),
