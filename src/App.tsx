@@ -1,5 +1,25 @@
 import type { ChangeEvent, SyntheticEvent } from "react";
 import { TRACK_TYPES, TRACK_DATA } from './trackData';
+
+// Normalise colour names from TRACK_DATA into hex values Mapbox understands
+const COLOR_MAP: Record<string, string> = {
+  'red':         '#e53e3e',
+  'black':       '#1a1a1a',
+  'blue':        '#2b6cb0',
+  'green':       '#2ea160',
+  'purple':      '#b12bbd',
+  'grey':        '#a0a0a0',
+  'light green': '#68d391',
+};
+const DEFAULT_COLOR = '#888888';
+
+// Build a Mapbox match expression: ['match', ['get','type'], t1, c1, t2, c2, ..., default]
+const typeColorMatchExpr: unknown[] = ['match', ['get', 'type']];
+TRACK_DATA.forEach(r => {
+  const hex = COLOR_MAP[r.color ?? ''] ?? DEFAULT_COLOR;
+  typeColorMatchExpr.push(r.type, hex);
+});
+typeColorMatchExpr.push(DEFAULT_COLOR); // fallback
 import { useEffect, useState, useCallback, useMemo } from "react";
 import type { Schema } from "../amplify/data/resource";
 import { checkLoginAndGetName } from "./utils/AuthUtils";
@@ -1015,15 +1035,7 @@ function App() {
                         3.5,
                         3.5
                       ],
-                      'circle-color': [
-                        'match',
-                        ['get', 'type'],
-                        'reuse', '#b12bbd',
-                        'water', '#2b6cb0',
-                        "wastewater", '#2ea160',
-                        "stormwater", '#eca4a4',
-                        "pavement", '#a0a0a0',  '#2b6cb0'
-                      ]/* '#2b6cb0' */,
+                      'circle-color': typeColorMatchExpr as any,
                       'circle-stroke-color': '#ffffff',
                       'circle-stroke-width': 2,
                       'circle-opacity': 0.9,
