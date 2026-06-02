@@ -256,6 +256,7 @@ function App() {
           length:      loc.length ?? null,
           description: loc.description ?? '',
           joint:       loc.joint ?? null,
+          color:       TRACK_DATA.find(r => r.type === loc.type)?.color ?? 'black',
         },
       })),
   }), [location]);
@@ -431,6 +432,7 @@ function App() {
       lat: lat,
       lng: lng,
       joint: joint,
+      color: TRACK_DATA.find(r => r.type === type)?.color ?? 'black',
     });
 
     const trackStr = String(track);
@@ -758,6 +760,7 @@ function App() {
           quantity: trackItem.quantity,
           unitprice: trackItem.unitprice,
           value: trackItem.value,
+          color: TRACK_DATA.find(r => r.type === trackItem.type)?.color ?? 'black',
         },
         geometry: {
           type: 'Polygon' as const,
