@@ -1061,12 +1061,12 @@ function App() {
                     }}
                   />
                 </Source>
-                <Source id="tick" type="vector" url="mapbox://qiaoxin136.3axmzn09">
+                <Source id="tick" type="vector" url="mapbox://qiaoxin136.pt7om4">
                   <Layer
                     id='tick'
                     type='line'
                     source='tick'
-                    source-layer="tick-d0etve"
+                    source-layer="tick.zip-77tjih"
                     paint={{
                       'line-width': 1,
                       // Use a get expression (https://docs.mapbox.comhttps://docs.mapbox.com/style-spec/reference/expressions/#get)
