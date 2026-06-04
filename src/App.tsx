@@ -277,6 +277,7 @@ function App() {
   const [placePhotos, setPlacePhotos] = useState<File[]>([]);
 
   const [tab, setTab] = useState("1");
+  const [showExtraTabs, setShowExtraTabs] = useState(true);
   const [basemap, setBasemap] = useState("mapbox://styles/mapbox/streets-v12");
   const [pdfMode, setPdfMode] = useState(false);
   const [calResult, setCalResult] = useState<number | null>(null);
@@ -736,6 +737,24 @@ function App() {
     }
   }
 
+  async function handleClean() {
+    // 1. Delete Date Info rows whose date doesn't appear in any Location record
+    const locationDates = new Set(location.map(loc => loc.date));
+    for (const item of dateInfoList) {
+      if (item.date && !locationDates.has(item.date)) {
+        await client.models.Date.delete({ id: item.id });
+      }
+    }
+
+    // 2. Delete Track Info rows whose track number doesn't appear in any Location record
+    const locationTracks = new Set(location.map(loc => String(loc.track)));
+    for (const item of trackInfoList) {
+      if (item.track && !locationTracks.has(item.track)) {
+        await client.models.Track.delete({ id: item.id });
+      }
+    }
+  }
+
   async function handleExportPolygon() {
     const polygonTracks = trackInfoList.filter(t => t.geometry === 'polygon');
 
@@ -916,6 +935,21 @@ function App() {
         </Button>
         <Button onClick={handleExportPolygon} backgroundColor={"lightyellow"} color={"darkorange"}>
           Export Polygon
+        </Button>
+        <Button onClick={handleClean} backgroundColor={"#ffe4e1"} color={"#c0392b"}>
+          Clean
+        </Button>
+        <Button
+          onClick={() => {
+            setShowExtraTabs(prev => {
+              if (!prev && (tab === "3" || tab === "4")) setTab("1");
+              return !prev;
+            });
+          }}
+          backgroundColor={showExtraTabs ? "#d1ecf1" : "#f8f9fa"}
+          color={showExtraTabs ? "#0c5460" : "#6c757d"}
+        >
+          {showExtraTabs ? "Tab ▲" : "Tab ▼"}
         </Button>
         {calResult !== null && (
           <span style={{ alignSelf: "center", fontWeight: "bold" }}>
@@ -1387,7 +1421,7 @@ function App() {
               </ScrollView>
             </>)
           },
-          {
+          ...(showExtraTabs ? [{
             label: "Date Info",
             value: "3",
             content: (<>
@@ -1689,7 +1723,7 @@ function App() {
                 </ThemeProvider>
               </ScrollView>
             </>)
-          },
+          }] : []),
         ]}
       />
 
