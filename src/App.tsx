@@ -942,7 +942,7 @@ function App() {
         <Button
           onClick={() => {
             setShowExtraTabs(prev => {
-              if (!prev && (tab === "3" || tab === "4")) setTab("1");
+              if (!prev && (tab === "2" || tab === "3" || tab === "4")) setTab("1");
               return !prev;
             });
           }}
@@ -1344,7 +1344,7 @@ function App() {
               </Map>
             </>)
           },
-          {
+          ...(showExtraTabs ? [{
             label: "History Data",
             value: "2",
             content: (<>
@@ -1421,7 +1421,7 @@ function App() {
               </ScrollView>
             </>)
           },
-          ...(showExtraTabs ? [{
+          {
             label: "Date Info",
             value: "3",
             content: (<>
