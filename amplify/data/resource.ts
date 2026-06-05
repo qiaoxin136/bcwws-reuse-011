@@ -16,6 +16,7 @@ const schema = a.schema({
       quantity: a.float(),
       unitprice: a.float(),
       value: a.float(),
+      unit: a.string(),
     })
     .authorization((allow) => [allow.publicApiKey()]),
   Comment: a.customType({
