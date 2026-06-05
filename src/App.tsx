@@ -106,7 +106,7 @@ const dateSelectionSet = [
 type DateItem = SelectionSet<Schema['Date']['type'], typeof dateSelectionSet>;
 
 const trackSelectionSet = [
-  'id', 'track', 'type', 'geometry', 'quantity', 'unitprice', 'value',
+  'id', 'track', 'type', 'geometry', 'quantity', 'unitprice', 'value', 'unit',
   'createdAt', 'updatedAt',
 ] as const;
 type TrackItem = SelectionSet<Schema['Track']['type'], typeof trackSelectionSet>;
@@ -729,10 +729,12 @@ function App() {
       }
 
       const value = trackItem.unitprice != null ? trackItem.unitprice * quantity : undefined;
+      const csvRow = TRACK_DATA.find(r => r.type === trackItem.type);
       await client.models.Track.update({
         id: trackItem.id,
         quantity,
         ...(value !== undefined ? { value } : {}),
+        ...(csvRow?.unit != null ? { unit: csvRow.unit } : {}),
       });
     }
   }
