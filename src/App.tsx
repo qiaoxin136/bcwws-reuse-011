@@ -277,7 +277,7 @@ function App() {
   const [placePhotos, setPlacePhotos] = useState<File[]>([]);
 
   const [tab, setTab] = useState("1");
-  const [showExtraTabs, setShowExtraTabs] = useState(true);
+  const [showExtraTabs, setShowExtraTabs] = useState(false);
   const [basemap, setBasemap] = useState("mapbox://styles/mapbox/streets-v12");
   const [pdfMode, setPdfMode] = useState(false);
   const [calResult, setCalResult] = useState<number | null>(null);
