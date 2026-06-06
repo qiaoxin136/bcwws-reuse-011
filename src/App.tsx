@@ -317,6 +317,7 @@ function App() {
   });
 
   const [trackInfoList, setTrackInfoList] = useState<TrackItem[]>([]);
+  const [trackChecked, setTrackChecked] = useState<Record<string, boolean>>({});
   const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
   const [editTrackFields, setEditTrackFields] = useState({
     track: "", type: "", geometry: "" as "line" | "point" | "polygon" | "",
@@ -396,7 +397,14 @@ function App() {
     const sub = client.models.Track.observeQuery({
       selectionSet: [...trackSelectionSet],
     }).subscribe({
-      next: (data) => setTrackInfoList([...data.items]),
+      next: (data) => {
+        setTrackInfoList([...data.items]);
+        setTrackChecked(prev => {
+          const next = { ...prev };
+          data.items.forEach(item => { if (!(item.id in next)) next[item.id] = true; });
+          return next;
+        });
+      },
       error: (err) => console.error('Track observeQuery error:', err),
     });
     return () => sub.unsubscribe();
@@ -693,54 +701,6 @@ function App() {
     setEditingDateId(null);
   }
 
-  function polygonAreaSqYd(points: { lat: number; lng: number }[]): number {
-    if (points.length < 3) return 0;
-    const avgLatRad = points.reduce((s, p) => s + p.lat, 0) / points.length * Math.PI / 180;
-    const mPerDegLat = 111139;
-    const mPerDegLng = 111139 * Math.cos(avgLatRad);
-    let area = 0;
-    const n = points.length;
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      const xi = points[i].lng * mPerDegLng;
-      const yi = points[i].lat * mPerDegLat;
-      const xj = points[j].lng * mPerDegLng;
-      const yj = points[j].lat * mPerDegLat;
-      area += xi * yj - xj * yi;
-    }
-    return Math.abs(area) / 2 * 1.19599; // sq metres → sq yards
-  }
-
-  async function handleFillTrack() {
-    for (const trackItem of trackInfoList) {
-      const trackNum = parseInt(trackItem.track ?? '');
-      if (isNaN(trackNum)) continue;
-
-      const locs = location.filter(loc => loc.track === trackNum);
-      let quantity = 0;
-
-      if (trackItem.geometry === 'point') {
-        quantity = locs.length;
-      } else if (trackItem.geometry === 'line') {
-        quantity = locs.reduce((sum, loc) => sum + (loc.length ?? 0), 0);
-      } else if (trackItem.geometry === 'polygon') {
-        const pts = locs
-          .filter(loc => loc.lat != null && loc.lng != null)
-          .map(loc => ({ lat: loc.lat!, lng: loc.lng! }));
-        quantity = polygonAreaSqYd(pts);
-      }
-
-      const value = trackItem.unitprice != null ? trackItem.unitprice * quantity : undefined;
-      const csvRow = TRACK_DATA.find(r => r.type === trackItem.type);
-      await client.models.Track.update({
-        id: trackItem.id,
-        quantity,
-        ...(value !== undefined ? { value } : {}),
-        ...(csvRow?.unit != null ? { unit: csvRow.unit } : {}),
-      });
-    }
-  }
-
   async function handleClean() {
     // 1. Delete Date Info rows whose date doesn't appear in any Location record
     const locationDates = new Set(location.map(loc => loc.date));
@@ -813,6 +773,55 @@ function App() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  function polygonAreaSqYd(points: { lat: number; lng: number }[]): number {
+    if (points.length < 3) return 0;
+    const avgLatRad = points.reduce((s, p) => s + p.lat, 0) / points.length * Math.PI / 180;
+    const mPerDegLat = 111139;
+    const mPerDegLng = 111139 * Math.cos(avgLatRad);
+    let area = 0;
+    const n = points.length;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += (points[i].lng * mPerDegLng) * (points[j].lat * mPerDegLat)
+            - (points[j].lng * mPerDegLng) * (points[i].lat * mPerDegLat);
+    }
+    return Math.abs(area) / 2 * 1.19599;
+  }
+
+  async function handleFillTrack() {
+    for (const trackItem of trackInfoList) {
+      if (!trackChecked[trackItem.id]) continue;
+
+      const trackNum = parseInt(trackItem.track ?? '');
+      if (isNaN(trackNum)) continue;
+
+      const csvRow = TRACK_DATA.find(r => r.type === trackItem.type);
+      const geometry = csvRow?.geometry ?? trackItem.geometry;
+      const locs = location.filter(loc => loc.track === trackNum);
+
+      let quantity = 0;
+      if (geometry === 'point') {
+        quantity = locs.length;
+      } else if (geometry === 'line') {
+        quantity = locs.reduce((sum, loc) => sum + (loc.length ?? 0), 0);
+      } else if (geometry === 'polygon') {
+        const pts = locs
+          .filter(loc => loc.lat != null && loc.lng != null)
+          .map(loc => ({ lat: loc.lat!, lng: loc.lng! }));
+        quantity = polygonAreaSqYd(pts);
+      }
+
+      const value = trackItem.unitprice != null ? trackItem.unitprice * quantity : undefined;
+      await client.models.Track.update({
+        id: trackItem.id,
+        type: trackItem.type ?? undefined,
+        geometry: (geometry ?? undefined) as "line" | "point" | "polygon" | undefined,
+        quantity,
+        ...(value !== undefined ? { value } : {}),
+      });
+    }
   }
 
   function handleCal() {
@@ -1610,6 +1619,7 @@ function App() {
                     style={{ width: '100%', fontFamily: 'Arial, sans-serif' }}>
                     <TableHead>
                       <TableRow>
+                        <TableCell as="th">✓</TableCell>
                         <TableCell as="th">Track</TableCell>
                         <TableCell as="th">Type</TableCell>
                         <TableCell as="th">Geometry</TableCell>
@@ -1621,6 +1631,7 @@ function App() {
                     </TableHead>
                     <TableBody>
                       <TableRow>
+                        <TableCell></TableCell>
                         <TableCell>
                           <input type="text" value={newTrackFields.track} placeholder="track"
                             onChange={e => setNewTrackFields(p => ({ ...p, track: e.target.value }))} style={{ width: '100%' }} />
@@ -1699,6 +1710,13 @@ function App() {
                           </TableRow>
                         ) : (
                           <TableRow key={item.id}>
+                            <TableCell style={{ textAlign: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={trackChecked[item.id] ?? true}
+                                onChange={e => setTrackChecked(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                              />
+                            </TableCell>
                             <TableCell>{item.track}</TableCell>
                             <TableCell>{item.type}</TableCell>
                             <TableCell>{item.geometry}</TableCell>
