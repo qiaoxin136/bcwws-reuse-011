@@ -175,17 +175,18 @@ function TypeSelect({ value, onChange, style }: {
   const [open, setOpen] = useState(false);
   const geoColor = (type: string) => {
     const geo = TRACK_DATA.find(r => r.type === type)?.geometry;
-    return geo === 'line' ? 'darkgreen' : geo === 'point' ? 'darkgrey' : 'darkblue';
+    return geo === 'line' ? 'darkgreen' : geo === 'point' ? '#444444' : 'darkblue';
   };
   return (
     <div style={{ position: 'relative', ...style }}>
       <div
         onClick={() => setOpen(o => !o)}
         style={{
-          fontSize: '11px', padding: '2px 4px', border: '1px solid #ccc',
+          fontSize: '12px', padding: '2px 4px', border: '1px solid #ccc',
           borderRadius: '3px', cursor: 'pointer', background: '#fff',
           color: geoColor(value), userSelect: 'none',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontWeight: style?.fontWeight ?? 'normal',
         }}
       >
         <span>{value}</span>
@@ -202,9 +203,10 @@ function TypeSelect({ value, onChange, style }: {
               key={t}
               onClick={() => { onChange(t); setOpen(false); }}
               style={{
-                fontSize: '11px', padding: '4px 6px', cursor: 'pointer',
+                fontSize: '12px', padding: '4px 6px', cursor: 'pointer',
                 color: geoColor(t),
                 background: t === value ? '#e8f0fe' : '#fff',
+                fontWeight: style?.fontWeight ?? 'normal',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = '#f0f0f0')}
               onMouseLeave={e => (e.currentTarget.style.background = t === value ? '#e8f0fe' : '#fff')}
@@ -933,10 +935,10 @@ function App() {
           QC
         </Button>
         <Button onClick={handleFillTrack} backgroundColor={"lightgreen"} color={"darkgreen"}>
-          Fill Track
+          Computation
         </Button>
         <Button onClick={handleExportPolygon} backgroundColor={"lightyellow"} color={"darkorange"}>
-          Export Polygon
+          Complete Polygon
         </Button>
         <Button onClick={handleClean} backgroundColor={"#ffe4e1"} color={"#c0392b"}>
           Clean
@@ -944,7 +946,7 @@ function App() {
         <Button
           onClick={() => {
             setShowExtraTabs(prev => {
-              if (!prev && (tab === "2" || tab === "3" || tab === "4")) setTab("1");
+              if (!prev && (tab === "2" || tab === "4")) setTab("1");
               return !prev;
             });
           }}
@@ -986,7 +988,7 @@ function App() {
         <TypeSelect
           value={type}
           onChange={setType}
-          style={{ width: '220px' }}
+          style={{ width: '320px', fontWeight: 'bold' }}
         />
 
 
@@ -1003,7 +1005,7 @@ function App() {
           value={description}
           placeholder="description"
           onChange={handleDescription}
-          width="800px"
+          width="700px"
         />
         <select
           value={joint}
@@ -1035,7 +1037,7 @@ function App() {
         onValueChange={(tab) => setTab(tab)}
         items={[
           {
-            label: "History Map",
+            label: "Progress Map",
             value: "1",
             content: (<>
               <Map
@@ -1167,7 +1169,7 @@ function App() {
                                   type="date"
                                   value={editDate}
                                   onChange={e => setEditDate(e.target.value)}
-                                  style={{ fontSize: '11px', padding: '2px 4px', width: '100%' }}
+                                  style={{ fontSize: '12px', padding: '2px 4px', width: '100%' }}
                                 />
                               </td>
                             </tr>
@@ -1189,7 +1191,7 @@ function App() {
                                   type="number"
                                   value={editTrack}
                                   onChange={e => setEditTrack(e.target.value)}
-                                  style={{ fontSize: '11px', padding: '2px 4px', width: '100%' }}
+                                  style={{ fontSize: '12px', padding: '2px 4px', width: '100%' }}
                                 />
                               </td>
                             </tr>
@@ -1201,7 +1203,7 @@ function App() {
                                   type="number"
                                   value={editDiameter}
                                   onChange={e => setEditDiameter(e.target.value)}
-                                  style={{ fontSize: '11px', padding: '2px 4px', width: '100%' }}
+                                  style={{ fontSize: '12px', padding: '2px 4px', width: '100%' }}
                                 />
                               </td>
                             </tr>
@@ -1213,7 +1215,7 @@ function App() {
                                   type="text"
                                   value={editDescription}
                                   onChange={e => setEditDescription(e.target.value)}
-                                  style={{ fontSize: '11px', padding: '2px 4px', width: '100%' }}
+                                  style={{ fontSize: '12px', padding: '2px 4px', width: '100%' }}
                                 />
                               </td>
                             </tr>
@@ -1223,7 +1225,7 @@ function App() {
                                 <select
                                   value={editJoint}
                                   onChange={e => setEditJoint(e.target.value)}
-                                  style={{ fontSize: '11px', padding: '2px 4px' }}
+                                  style={{ fontSize: '12px', padding: '2px 4px' }}
                                 >
                                   <option value="joint">Joint</option>
                                   <option value="90-bend">90-Bend</option>
@@ -1241,7 +1243,7 @@ function App() {
                         <button
                           onClick={(e) => { e.stopPropagation(); handleUpdatePopup(popupInfo.properties.id); }}
                           style={{
-                            fontSize: '11px', padding: '2px 8px', cursor: 'pointer',
+                            fontSize: '12px', padding: '2px 8px', cursor: 'pointer',
                             border: '1px solid #2b6cb0', borderRadius: '3px',
                             background: '#fff', color: '#2b6cb0',
                           }}
@@ -1254,7 +1256,7 @@ function App() {
                             setPopupInfo(null);
                           }}
                           style={{
-                            fontSize: '11px', padding: '2px 8px', cursor: 'pointer',
+                            fontSize: '12px', padding: '2px 8px', cursor: 'pointer',
                             border: '1px solid #c00', borderRadius: '3px',
                             background: '#fff', color: '#c00',
                           }}
@@ -1263,11 +1265,11 @@ function App() {
                         </button>
                         </div>
                         <br /><br />
-                        <label style={{ fontSize: '11px' }}>Place photos:</label><br />
+                        <label style={{ fontSize: '12px' }}>Place photos:</label><br />
                         <input type="file" multiple
                           onChange={(e) => previewPhotos(e)}
                           placeholder="new picture"
-                          style={{ fontSize: '11px' }}
+                          style={{ fontSize: '12px' }}
                         /><br /><br />
                         <button
                           onClick={(e) => {
@@ -1276,7 +1278,7 @@ function App() {
                             setPopupInfo(null);
                           }}
                           style={{
-                            fontSize: '11px', padding: '2px 8px', cursor: 'pointer',
+                            fontSize: '12px', padding: '2px 8px', cursor: 'pointer',
                             border: '1px solid #555', borderRadius: '3px',
                             background: '#fff', color: '#333',
                           }}
@@ -1346,90 +1348,13 @@ function App() {
               </Map>
             </>)
           },
-          ...(showExtraTabs ? [{
-            label: "History Data",
-            value: "2",
-            content: (<>
-              <ScrollView
-                as="div"
-                ariaLabel="View example"
-                backgroundColor="var(--amplify-colors-white)"
-                borderRadius="6px"
-                color="var(--amplify-colors-blue-60)"
-                padding="1rem"
-                height="700px"
-              >
-                <ThemeProvider theme={theme} colorMode="light">
-                  <Table caption="" highlightOnHover={false} variation="striped"
-                    style={{
-                      //tableLayout: 'fixed',
-                      width: '100%',
-                      fontFamily: 'Arial, sans-serif',
-                    }}>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Date</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Time</TableCell>
-                        <TableCell as="th" /* style={{ width: '10%' }} */>Track</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Type</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>User</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Diameter</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Length</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Images</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Latitude</TableCell>
-                        <TableCell as="th" /* style={{ width: '15%' }} */>Longitude</TableCell>
-                        <TableCell as="th">Joint</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {[...location].sort((a, b) => {
-                          const trackDiff = (a.track ?? 0) - (b.track ?? 0);
-                          if (trackDiff !== 0) return trackDiff;
-                          const dateA = `${a.date ?? ''}T${a.time ?? ''}`;
-                          const dateB = `${b.date ?? ''}T${b.time ?? ''}`;
-                          return dateB.localeCompare(dateA);
-                        }).map((location) => (
-                        <TableRow
-                          onDoubleClick={(e) => {
-                            console.log("location photos url =", location.photos)
-                            console.log(e)
-                            if (location.photos)
-                              deleteLocation2(location.id, location.photos)
-                            else
-                              deleteLocation(location.id)
-                          }
-
-
-                          }
-                          key={location.id}
-                        >
-                          <TableCell /* width="15%" */>{location.date}</TableCell>
-                          <TableCell /* width="15%" */>{location.time}</TableCell>
-                          <TableCell /* width="10%" */>{location.track}</TableCell>
-                          <TableCell /* width="15%" */>{location.type}</TableCell>
-                          <TableCell /* width="15%" */>{location.username}</TableCell>
-                          <TableCell /* width="15%" */>{location.diameter}</TableCell>
-                          <TableCell /* width="15%" */>{location.length != null ? Math.round(Number(location.length)) : ''}</TableCell>
-                          <TableCell /* width="15%" */>{location.photos ? location.photos.length : 0}</TableCell>
-                          <TableCell /* width="15%" */>{location.lat != null ? Number(location.lat).toFixed(6) : ''}</TableCell>
-                          <TableCell /* width="15%" */>{location.lng != null ? Number(location.lng).toFixed(6) : ''}</TableCell>
-                          <TableCell>{jointMap[location.id] ?? ''}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-
-                  </Table>
-                </ThemeProvider>
-              </ScrollView>
-            </>)
-          },
           {
-            label: "Date Info",
+            label: "Report Input",
             value: "3",
             content: (<>
               <ScrollView
                 as="div"
-                ariaLabel="Date Info"
+                ariaLabel="Report Input"
                 backgroundColor="var(--amplify-colors-white)"
                 borderRadius="6px"
                 color="var(--amplify-colors-blue-60)"
@@ -1590,7 +1515,84 @@ function App() {
               </ScrollView>
             </>)
           },
-          {
+          ...(showExtraTabs ? [{
+            label: "History Data",
+            value: "2",
+            content: (<>
+              <ScrollView
+                as="div"
+                ariaLabel="View example"
+                backgroundColor="var(--amplify-colors-white)"
+                borderRadius="6px"
+                color="var(--amplify-colors-blue-60)"
+                padding="1rem"
+                height="700px"
+              >
+                <ThemeProvider theme={theme} colorMode="light">
+                  <Table caption="" highlightOnHover={false} variation="striped"
+                    style={{
+                      //tableLayout: 'fixed',
+                      width: '100%',
+                      fontFamily: 'Arial, sans-serif',
+                    }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Date</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Time</TableCell>
+                        <TableCell as="th" /* style={{ width: '10%' }} */>Track</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Type</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>User</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Diameter</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Length</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Images</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Latitude</TableCell>
+                        <TableCell as="th" /* style={{ width: '15%' }} */>Longitude</TableCell>
+                        <TableCell as="th">Joint</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {[...location].sort((a, b) => {
+                          const trackDiff = (a.track ?? 0) - (b.track ?? 0);
+                          if (trackDiff !== 0) return trackDiff;
+                          const dateA = `${a.date ?? ''}T${a.time ?? ''}`;
+                          const dateB = `${b.date ?? ''}T${b.time ?? ''}`;
+                          return dateB.localeCompare(dateA);
+                        }).map((location) => (
+                        <TableRow
+                          onDoubleClick={(e) => {
+                            console.log("location photos url =", location.photos)
+                            console.log(e)
+                            if (location.photos)
+                              deleteLocation2(location.id, location.photos)
+                            else
+                              deleteLocation(location.id)
+                          }
+
+
+                          }
+                          key={location.id}
+                        >
+                          <TableCell /* width="15%" */>{location.date}</TableCell>
+                          <TableCell /* width="15%" */>{location.time}</TableCell>
+                          <TableCell /* width="10%" */>{location.track}</TableCell>
+                          <TableCell /* width="15%" */>{location.type}</TableCell>
+                          <TableCell /* width="15%" */>{location.username}</TableCell>
+                          <TableCell /* width="15%" */>{location.diameter}</TableCell>
+                          <TableCell /* width="15%" */>{location.length != null ? Math.round(Number(location.length)) : ''}</TableCell>
+                          <TableCell /* width="15%" */>{location.photos ? location.photos.length : 0}</TableCell>
+                          <TableCell /* width="15%" */>{location.lat != null ? Number(location.lat).toFixed(6) : ''}</TableCell>
+                          <TableCell /* width="15%" */>{location.lng != null ? Number(location.lng).toFixed(6) : ''}</TableCell>
+                          <TableCell>{jointMap[location.id] ?? ''}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+
+                  </Table>
+                </ThemeProvider>
+              </ScrollView>
+            </>)
+          }] : []),
+          ...(showExtraTabs ? [{
             label: "Track Info",
             value: "4",
             content: (<>
