@@ -317,7 +317,12 @@ function App() {
   });
 
   const [trackInfoList, setTrackInfoList] = useState<TrackItem[]>([]);
-  const [trackChecked, setTrackChecked] = useState<Record<string, boolean>>({});
+  const [trackChecked, setTrackChecked] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('trackChecked');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
   const [editingTrackId, setEditingTrackId] = useState<string | null>(null);
   const [editTrackFields, setEditTrackFields] = useState({
     track: "", type: "", geometry: "" as "line" | "point" | "polygon" | "",
@@ -409,6 +414,10 @@ function App() {
     });
     return () => sub.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem('trackChecked', JSON.stringify(trackChecked)); } catch {}
+  }, [trackChecked]);
 
   // Build jointMap directly from Amplify location state (no external fetch needed).
   useEffect(() => {
