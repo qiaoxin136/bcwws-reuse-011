@@ -1384,7 +1384,46 @@ function App() {
                         <TableCell as="th">Observation</TableCell>
                         <TableCell as="th">Remark</TableCell>
                         <TableCell as="th">Comment</TableCell>
-                        <TableCell as="th">Equipment</TableCell>
+                        <TableCell as="th">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            Equipment
+                            <select
+                              defaultValue=""
+                              onChange={e => {
+                                if (e.target.value) {
+                                  setDiEquipment(prev => prev ? `${prev}, ${e.target.value}` : e.target.value);
+                                  e.target.value = "";
+                                }
+                              }}
+                              style={{ fontSize: '11px', padding: '1px 3px' }}
+                            >
+                              <option value="">+ List</option>
+                              <option>Loader</option>
+                              <option>Excavator</option>
+                              <option>Bobcat</option>
+                              <option>Broom Tractor</option>
+                              <option>Combination</option>
+                              <option>Vibratory Roller</option>
+                              <option>Pneumatic Roller</option>
+                              <option>Grader</option>
+                              <option>Mini Grader</option>
+                              <option>Asphalt / Dump Truck</option>
+                              <option>Milling Machine</option>
+                              <option>Asphalt Paver</option>
+                              <option>HDD Machine</option>
+                              <option>Trencher</option>
+                              <option>Crane</option>
+                              <option>Sled Tamp</option>
+                              <option>Dozer</option>
+                            </select>
+                            <button
+                              onClick={() => setDate(new Date().toISOString().split('T')[0])}
+                              style={{ fontSize: '11px', padding: '1px 6px', cursor: 'pointer', whiteSpace: 'nowrap', backgroundColor: '#2b6cb0', color: 'white', border: 'none', borderRadius: '3px' }}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </TableCell>
                         <TableCell as="th"></TableCell>
                       </TableRow>
                     </TableHead>
@@ -1477,8 +1516,45 @@ function App() {
                                 onChange={e => setEf('comment', e.target.value)} style={{ width: '100%' }} />
                             </TableCell>
                             <TableCell>
-                              <input type="text" value={ef.equipment}
-                                onChange={e => setEf('equipment', e.target.value)} style={{ width: '100%' }} />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <input type="text" value={ef.equipment}
+                                  onChange={e => setEf('equipment', e.target.value)} style={{ flex: 1 }} />
+                                <select
+                                  defaultValue=""
+                                  onChange={e => {
+                                    if (e.target.value) {
+                                      setEf('equipment', ef.equipment ? `${ef.equipment}, ${e.target.value}` : e.target.value);
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                  style={{ fontSize: '11px', padding: '1px 3px' }}
+                                >
+                                  <option value="">+ List</option>
+                                  <option>Loader</option>
+                                  <option>Excavator</option>
+                                  <option>Bobcat</option>
+                                  <option>Broom Tractor</option>
+                                  <option>Combination</option>
+                                  <option>Vibratory Roller</option>
+                                  <option>Pneumatic Roller</option>
+                                  <option>Grader</option>
+                                  <option>Mini Grader</option>
+                                  <option>Asphalt / Dump Truck</option>
+                                  <option>Milling Machine</option>
+                                  <option>Asphalt Paver</option>
+                                  <option>HDD Machine</option>
+                                  <option>Trencher</option>
+                                  <option>Crane</option>
+                                  <option>Sled Tamp</option>
+                                  <option>Dozer</option>
+                                </select>
+                                <button
+                                  onClick={() => setEf('equipment', '')}
+                                  style={{ fontSize: '11px', padding: '1px 6px', cursor: 'pointer', whiteSpace: 'nowrap', backgroundColor: '#2b6cb0', color: 'white', border: 'none', borderRadius: '3px' }}
+                                >
+                                  Clear
+                                </button>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <button onClick={() => saveDateInfo(item.id)} style={{ marginRight: 4, backgroundColor: 'green', color: 'white', border: 'none', padding: '4px 10px', cursor: 'pointer' }}>Save</button>
